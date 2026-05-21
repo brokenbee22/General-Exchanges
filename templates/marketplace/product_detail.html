@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="detail-layout">
+    <div>
+        {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="detail-img">
+        {% else %}
+            <div class="detail-placeholder">No image uploaded</div>
+        {% endif %}
+    </div>
+
+    <div class="detail-card">
+        <span class="tag">{{ product.get_category_display }}</span>
+        <h1>{{ product.name }}</h1>
+        <p class="muted">Sold by {{ product.seller.business_name }}</p>
+        <p class="price large">${{ product.price }} / {{ product.get_unit_display }}</p>
+
+        <div class="info-grid">
+            <div>
+                <strong>Location</strong>
+                <p>{{ product.city }}, {{ product.state }}</p>
+            </div>
+            <div>
+                <strong>Available</strong>
+                <p>{{ product.quantity_available }}</p>
+            </div>
+            <div>
+                <strong>Minimum order</strong>
+                <p>{{ product.minimum_order_quantity }}</p>
+            </div>
+            <div>
+                <strong>Material type</strong>
+                <p>{{ product.material_type|default:'Not specified' }}</p>
+            </div>
+        </div>
+
+        <h3>Description</h3>
+        <p>{{ product.description }}</p>
+
+        <h3>Delivery notes</h3>
+        <p>{{ product.delivery_notes|default:'Seller has not added delivery notes yet.' }}</p>
+
+        <a class="button checkout-button" href="{% url 'checkout' product.pk %}">Checkout</a>
+
+        <div class="callout small-note">
+            This test checkout creates an order, but it does not charge a real payment yet.
+        </div>
+    </div>
+</div>
+{% endblock %}

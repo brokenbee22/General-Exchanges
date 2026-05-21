@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="form-card">
+    <h1>Register as a Seller</h1>
+    <p class="muted">Create a supplier account to list raw materials on General Exchanges.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Create Seller Account</button>
+    </form>
+</div>
+{% endblock %}

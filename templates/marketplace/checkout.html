@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="checkout-layout">
+    <div class="form-card">
+        <h1>Checkout</h1>
+        <p class="muted">Enter buyer and delivery details. This is a test order flow for now.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="button">Place Order</button>
+        </form>
+    </div>
+
+    <aside class="order-summary">
+        <h2>Order Summary</h2>
+        {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="summary-img">
+        {% endif %}
+        <h3>{{ product.name }}</h3>
+        <p class="muted">{{ product.seller.business_name }} · {{ product.city }}, {{ product.state }}</p>
+        <p>${{ product.price }} / {{ product.get_unit_display }}</p>
+        <hr>
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <strong>${{ subtotal }}</strong>
+        </div>
+        <div class="summary-row">
+            <span>Platform fee</span>
+            <strong>${{ platform_fee }}</strong>
+        </div>
+        <div class="summary-row total-row">
+            <span>Total</span>
+            <strong>${{ total }}</strong>
+        </div>
+        <p class="muted small-note">Real payments will be added later with Stripe or a similar service.</p>
+    </aside>
+</section>
+{% endblock %}

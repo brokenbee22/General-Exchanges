@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="dashboard-header">
+    <div>
+        <h1>{{ seller.business_name }}</h1>
+        <p class="muted">{{ seller.city }}, {{ seller.state }}</p>
+        {% if seller.is_approved %}
+            <span class="status approved">Approved Seller</span>
+        {% else %}
+            <span class="status pending">Pending Admin Approval</span>
+        {% endif %}
+    </div>
+
+    {% if seller.is_approved %}
+        <a href="{% url 'add_product' %}" class="button">Add Product</a>
+    {% endif %}
+</section>
+
+{% if not seller.is_approved %}
+    <div class="callout">
+        Your seller profile exists, but an admin needs to approve it before you can add products.
+    </div>
+{% endif %}
+
+<section>
+    <h2>Your Products</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.get_category_display }}</td>
+                        <td>${{ product.price }} / {{ product.get_unit_display }}</td>
+                        <td>{{ product.quantity_available }}</td>
+                        <td>{{ product.is_active|yesno:'Yes,No' }}</td>
+                        <td>
+                            <a href="{% url 'edit_product' product.pk %}">Edit</a>
+                            <a href="{% url 'delete_product' product.pk %}" class="danger-link">Delete</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">No products yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="orders-section">
+    <h2>Orders From Buyers</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Buyer</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Ship To</th>
+                    <th>Tracking</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.buyer_name }}<br><span class="muted">{{ order.buyer_email }}</span></td>
+                        <td>{{ order.get_status_display }}</td>
+                        <td>${{ order.total }}</td>
+                        <td>{{ order.shipping_address }}</td>
+                        <td>
+                            {% if order.tracking_number %}
+                                {{ order.tracking_carrier }} {{ order.tracking_number }}
+                            {% else %}
+                                Not added yet
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">No orders yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
