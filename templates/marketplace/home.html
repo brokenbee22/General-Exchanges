@@ -1,52 +1,127 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<section class="hero">
-    <h1>Buy raw materials from local businesses.</h1>
-    <p>Steel, wood, cement, bricks, gravel, plywood, roofing, PVC, and more.</p>
+<section class="market-hero">
+    <div class="hero-overlay">
+        <span class="beta-pill">Beta Phase</span>
+        <h1>General Exchange</h1>
+        <p>Buy and sell raw materials online, delivered directly to your door.</p>
 
-    <form method="get" class="search-card">
-        <input type="text" name="q" value="{{ query }}" placeholder="Search cement, lumber, steel...">
-        <input type="text" name="city" value="{{ city }}" placeholder="City, ex: Houston">
+        <div class="hero-tags">
+            <span>Wood</span>
+            <span>Steel</span>
+            <span>Bricks</span>
+            <span>Cement</span>
+            <span>PVC</span>
+            <span>Gravel</span>
+        </div>
+    </div>
+</section>
+
+<section class="browse-hero">
+    <div>
+        <h1>Buy raw materials from local businesses.</h1>
+        <p>Steel, wood, cement, bricks, gravel, plywood, roofing, PVC, and more.</p>
+    </div>
+
+    <form method="get" class="search-panel">
+        <input
+            type="text"
+            name="q"
+            value="{{ query }}"
+            placeholder="Search cement, lumber, steel..."
+        >
+
+        <input
+            type="text"
+            name="city"
+            value="{{ city }}"
+            placeholder="City, ex: Houston"
+        >
+
         <select name="category">
             <option value="">All categories</option>
             {% for value, label in category_choices %}
-                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
             {% endfor %}
         </select>
+
         <button type="submit">Search</button>
     </form>
 </section>
 
-<section>
-    <div class="section-title">
+<section class="section-heading">
+    <div>
         <h2>Available materials</h2>
-        <p>{{ products|length }} result{{ products|length|pluralize }}</p>
+        <p>Browse current listings from approved sellers.</p>
     </div>
 
-    <div class="product-grid">
-        {% for product in products %}
-            <article class="product-card">
-                {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}">
+    <span>{{ products|length }} results</span>
+</section>
+
+<section class="product-grid">
+    {% for product in products %}
+        <article class="product-card">
+            <a href="{% url 'product_detail' product.pk %}" class="product-image-wrap">
+                {% if product.get_category_display == 'Steel' %}
+                    <img src="/static/img/steel.jpg" alt="{{ product.name }}" class="product-image">
+                {% elif product.get_category_display == 'Wood' %}
+                    <img src="/static/img/wood.jpg" alt="{{ product.name }}" class="product-image">
+                {% elif product.image %}
+                    <img
+                        src="{{ product.image.url }}"
+                        alt="{{ product.name }}"
+                        class="product-image"
+                        onerror="this.onerror=null; this.src='/static/img/materials-hero.jpg';"
+                    >
                 {% else %}
-                    <div class="placeholder-img">No image</div>
+                    <img src="/static/img/materials-hero.jpg" alt="{{ product.name }}" class="product-image">
                 {% endif %}
-                <div class="product-body">
-                    <span class="tag">{{ product.get_category_display }}</span>
-                    <h3>{{ product.name }}</h3>
-                    <p class="muted">{{ product.city }}, {{ product.state }}</p>
-                    <p class="price">${{ product.price }} / {{ product.get_unit_display }}</p>
-                    <p class="muted">Available: {{ product.quantity_available }}</p>
-                    <a href="{% url 'product_detail' product.pk %}" class="button-full">View Details</a>
+            </a>
+
+            <div class="product-card-body">
+                <div class="product-top-row">
+                    <span class="product-pill">{{ product.get_category_display }}</span>
+                    <span class="product-location">{{ product.city }}, {{ product.state }}</span>
                 </div>
-            </article>
-        {% empty %}
-            <div class="empty-state">
-                <h3>No products found</h3>
-                <p>Try another search or category.</p>
+
+                <h3>{{ product.name }}</h3>
+
+                <p class="muted">
+                    Sold by {{ product.seller.business_name }}
+                </p>
+
+                <p class="product-price">
+                    ${{ product.price }} / {{ product.get_unit_display }}
+                </p>
+
+                <div class="product-meta">
+                    <span>Available: {{ product.quantity_available }}</span>
+                    <span>Min order: {{ product.minimum_order_quantity }}</span>
+                </div>
+
+                <div class="product-actions">
+                    <a href="{% url 'product_detail' product.pk %}" class="button view-button">
+                        View Details
+                    </a>
+
+                    <form method="POST" action="{% url 'add_to_cart' product.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="quantity" value="{{ product.minimum_order_quantity }}">
+                        <button type="submit" class="cart-mini-button" title="Add to cart">
+                            🛒
+                        </button>
+                    </form>
+                </div>
             </div>
-        {% endfor %}
-    </div>
+        </article>
+    {% empty %}
+        <div class="empty-state">
+            <h3>No materials found</h3>
+            <p>Try searching another city, product, or category.</p>
+        </div>
+    {% endfor %}
 </section>
 {% endblock %}

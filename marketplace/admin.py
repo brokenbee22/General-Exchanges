@@ -1,30 +1,34 @@
-from django.contrib import admin
-from .models import Order, OrderItem, Product, SellerProfile
+import os
+from django.core.management.base import BaseCommand
+from django.contrib.auth import get_user_model
 
 
-@admin.register(SellerProfile)
-class SellerProfileAdmin(admin.ModelAdmin):
-    list_display = ('business_name', 'user', 'city', 'state', 'is_approved', 'created_at')
-    list_filter = ('is_approved', 'state', 'city')
-    search_fields = ('business_name', 'user__username', 'city')
+class Command(BaseCommand):
+    help = "Creates or updates an admin user from Render environment variables."
 
+    def handle(self, *args, **options):
+        User = get_user_model()
 
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'seller', 'category', 'price', 'unit', 'quantity_available', 'city', 'is_active')
-    list_filter = ('category', 'unit', 'is_active', 'state', 'city')
-    search_fields = ('name', 'description', 'material_type', 'seller__business_name')
+        username = os.getenv("ADMIN_USERNAME")
+        email = os.getenv("ADMIN_EMAIL")
+        password = os.getenv("ADMIN_PASSWORD")
 
+        if not username or not email or not password:
+            self.stdout.write("Admin env vars are missing. Skipping admin setup.")
+            return
 
-class OrderItemInline(admin.TabularInline):
-    model = OrderItem
-    extra = 0
-    readonly_fields = ('product_name', 'quantity', 'unit', 'price_at_purchase', 'line_total')
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={"email": email}
+        )
 
+        user.email = email
+        user.is_staff = True
+        user.is_superuser = True
+        user.set_password(password)
+        user.save()
 
-@admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'buyer_name', 'seller', 'status', 'total', 'created_at')
-    list_filter = ('status', 'created_at')
-    search_fields = ('buyer_name', 'buyer_email', 'seller__business_name', 'tracking_number')
-    inlines = [OrderItemInline]
+        if created:
+            self.stdout.write(self.style.SUCCESS("Admin user created."))
+        else:
+            self.stdout.write(self.style.SUCCESS("Admin user updated."))

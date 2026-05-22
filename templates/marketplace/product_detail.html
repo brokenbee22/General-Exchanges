@@ -3,11 +3,22 @@
 {% block content %}
 <div class="detail-layout">
     <div>
-        {% if product.image %}
-            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="detail-img">
-        {% else %}
-            <div class="detail-placeholder">No image uploaded</div>
-        {% endif %}
+        {% with product_name=product.name|lower category_name=product.get_category_display|lower material_name=product.material_type|default:''|lower %}
+            {% if 'steel' in product_name or 'steel' in category_name or 'steel' in material_name %}
+                <img src="/static/img/steel.jpg" alt="{{ product.name }}" class="detail-img">
+            {% elif 'wood' in product_name or 'wood' in category_name or 'wood' in material_name or 'lumber' in product_name or 'lumber' in category_name or 'lumber' in material_name %}
+                <img src="/static/img/wood.jpg" alt="{{ product.name }}" class="detail-img">
+            {% elif product.image %}
+                <img
+                    src="{{ product.image.url }}"
+                    alt="{{ product.name }}"
+                    class="detail-img"
+                    onerror="this.onerror=null; this.src='/static/img/materials-hero.jpg';"
+                >
+            {% else %}
+                <img src="/static/img/materials-hero.jpg" alt="{{ product.name }}" class="detail-img">
+            {% endif %}
+        {% endwith %}
     </div>
 
     <div class="detail-card">
@@ -21,14 +32,17 @@
                 <strong>Location</strong>
                 <p>{{ product.city }}, {{ product.state }}</p>
             </div>
+
             <div>
                 <strong>Available</strong>
                 <p>{{ product.quantity_available }}</p>
             </div>
+
             <div>
                 <strong>Minimum order</strong>
                 <p>{{ product.minimum_order_quantity }}</p>
             </div>
+
             <div>
                 <strong>Material type</strong>
                 <p>{{ product.material_type|default:'Not specified' }}</p>
@@ -41,7 +55,29 @@
         <h3>Delivery notes</h3>
         <p>{{ product.delivery_notes|default:'Seller has not added delivery notes yet.' }}</p>
 
-        <a class="button checkout-button" href="{% url 'checkout' product.pk %}">Checkout</a>
+        <div class="buy-box">
+            <form method="POST" action="{% url 'add_to_cart' product.id %}" class="cart-form">
+                {% csrf_token %}
+
+                <label for="quantity">Quantity</label>
+                <input
+                    type="number"
+                    name="quantity"
+                    id="quantity"
+                    min="{{ product.minimum_order_quantity }}"
+                    max="{{ product.quantity_available }}"
+                    value="{{ product.minimum_order_quantity }}"
+                >
+
+                <button type="submit" class="button add-cart-button">
+                    Add to Cart
+                </button>
+            </form>
+
+            <a class="button checkout-button" href="{% url 'checkout' product.pk %}">
+                Buy Now
+            </a>
+        </div>
 
         <div class="callout small-note">
             This test checkout creates an order, but it does not charge a real payment yet.

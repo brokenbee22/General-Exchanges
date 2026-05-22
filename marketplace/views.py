@@ -12,7 +12,6 @@ from .models import Order, OrderItem, Product, SellerProfile
 
 
 def home(request):
-    # main page where buyers browse products from approved sellers
     products = Product.objects.filter(is_active=True, seller__is_approved=True)
 
     query = request.GET.get('q', '').strip()
@@ -77,11 +76,7 @@ def checkout(request, pk):
 
             else:
                 subtotal = product.price * Decimal(quantity)
-
-                # General Exchange takes 5% from the seller payout.
-                # Buyer does not see this as an extra fee.
                 platform_fee = (subtotal * Decimal('0.05')).quantize(Decimal('0.01'))
-                seller_payout = subtotal - platform_fee
 
                 order = form.save(commit=False)
                 order.seller = product.seller
@@ -122,16 +117,11 @@ def checkout(request, pk):
 
     subtotal = product.price * Decimal(quantity)
 
-    # Keep this calculated for backend/seller logic, but do not show it to the buyer.
-    platform_fee = (subtotal * Decimal('0.05')).quantize(Decimal('0.01'))
-    seller_payout = subtotal - platform_fee
-
     return render(request, 'marketplace/checkout.html', {
         'form': form,
         'product': product,
         'subtotal': subtotal,
         'total': subtotal,
-        'seller_payout': seller_payout,
     })
 
 
@@ -144,7 +134,6 @@ def order_success(request, order_id):
 
 
 def seller_register(request):
-    # seller signs up, then I approve the account manually in admin
     if request.method == 'POST':
         form = SellerRegistrationForm(request.POST)
 
@@ -265,3 +254,192 @@ def delete_product(request, pk):
     return render(request, 'marketplace/delete_product.html', {
         'product': product
     })
+
+
+def get_cart(request):
+    return request.session.get('cart', {})
+
+
+def save_cart(request, cart):
+    request.session['cart'] = cart
+    request.session.modified = True
+
+
+def build_cart_items(cart):
+    cart_items = []
+    cart_total = Decimal('0.00')
+
+    for product_id, quantity in cart.items():
+        try:
+            product = Product.objects.get(
+                id=product_id,
+                is_active=True,
+                seller__is_approved=True
+            )
+        except Product.DoesNotExist:
+            continue
+
+        line_total = product.price * Decimal(quantity)
+        cart_total += line_total
+
+        cart_items.append({
+            'product': product,
+            'quantity': quantity,
+            'line_total': line_total,
+        })
+
+    return cart_items, cart_total
+
+
+def add_to_cart(request, pk):
+    product = get_object_or_404(
+        Product,
+        pk=pk,
+        is_active=True,
+        seller__is_approved=True
+    )
+
+    cart = get_cart(request)
+    product_id = str(product.id)
+
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', product.minimum_order_quantity))
+        except ValueError:
+            quantity = product.minimum_order_quantity
+    else:
+        quantity = product.minimum_order_quantity
+
+    if quantity < product.minimum_order_quantity:
+        quantity = product.minimum_order_quantity
+
+    if quantity > product.quantity_available:
+        quantity = product.quantity_available
+
+    cart[product_id] = cart.get(product_id, 0) + quantity
+
+    if cart[product_id] > product.quantity_available:
+        cart[product_id] = product.quantity_available
+
+    save_cart(request, cart)
+
+    messages.success(request, f'{product.name} was added to your cart.')
+    return redirect('cart')
+
+
+def cart_view(request):
+    cart = get_cart(request)
+    cart_items, cart_total = build_cart_items(cart)
+
+    return render(request, 'marketplace/cart.html', {
+        'cart_items': cart_items,
+        'cart_total': cart_total,
+    })
+
+
+def cart_checkout(request):
+    cart = get_cart(request)
+    cart_items, cart_total = build_cart_items(cart)
+
+    if not cart_items:
+        messages.warning(request, 'Your cart is empty.')
+        return redirect('cart')
+
+    if request.method == 'POST':
+        form = CheckoutForm(request.POST)
+
+        if form.is_valid():
+            created_orders = []
+
+            for item in cart_items:
+                product = item['product']
+                quantity = item['quantity']
+                subtotal = item['line_total']
+
+                if quantity > product.quantity_available:
+                    messages.error(
+                        request,
+                        f'{product.name} does not have enough stock available.'
+                    )
+                    return redirect('cart')
+
+                platform_fee = (subtotal * Decimal('0.05')).quantize(Decimal('0.01'))
+
+                order = form.save(commit=False)
+                order.seller = product.seller
+                order.subtotal = subtotal
+                order.platform_fee = platform_fee
+                order.total = subtotal
+                order.save()
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    product_name=product.name,
+                    quantity=quantity,
+                    unit=product.get_unit_display(),
+                    price_at_purchase=product.price,
+                    line_total=subtotal,
+                )
+
+                product.quantity_available -= quantity
+                product.save()
+
+                created_orders.append(order)
+
+            save_cart(request, {})
+
+            messages.success(
+                request,
+                'Order placed. This is a test checkout, so no real payment was charged.'
+            )
+
+            return redirect('order_success', order_id=created_orders[0].id)
+
+    else:
+        form = CheckoutForm()
+
+    return render(request, 'marketplace/cart_checkout.html', {
+        'form': form,
+        'cart_items': cart_items,
+        'cart_total': cart_total,
+    })
+
+
+def update_cart_item(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    cart = get_cart(request)
+    product_id = str(product.id)
+
+    if request.method == 'POST':
+        try:
+            quantity = int(request.POST.get('quantity', 1))
+        except ValueError:
+            quantity = 1
+
+        if quantity <= 0:
+            cart.pop(product_id, None)
+        else:
+            if quantity > product.quantity_available:
+                quantity = product.quantity_available
+
+            if quantity < product.minimum_order_quantity:
+                quantity = product.minimum_order_quantity
+
+            cart[product_id] = quantity
+
+    save_cart(request, cart)
+    messages.success(request, 'Cart updated.')
+    return redirect('cart')
+
+
+def remove_from_cart(request, pk):
+    cart = get_cart(request)
+    product_id = str(pk)
+
+    if product_id in cart:
+        cart.pop(product_id)
+
+    save_cart(request, cart)
+    messages.success(request, 'Item removed from cart.')
+    return redirect('cart')

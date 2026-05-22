@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="cart-page">
+    <div class="page-header">
+        <h1>Your Cart</h1>
+        <p>Review your materials before continuing with checkout.</p>
+    </div>
+
+    {% if cart_items %}
+        <div class="cart-layout">
+            <div class="cart-items">
+                {% for item in cart_items %}
+                    <div class="cart-card">
+                        <div class="cart-img-wrap">
+                            {% if item.product.get_category_display == 'Steel' %}
+                                <img src="/static/img/steel.jpg" alt="{{ item.product.name }}" class="cart-img">
+                            {% elif item.product.get_category_display == 'Wood' %}
+                                <img src="/static/img/wood.jpg" alt="{{ item.product.name }}" class="cart-img">
+                            {% elif item.product.image %}
+                                <img
+                                    src="{{ item.product.image.url }}"
+                                    alt="{{ item.product.name }}"
+                                    class="cart-img"
+                                    onerror="this.onerror=null; this.src='/static/img/materials-hero.jpg';"
+                                >
+                            {% else %}
+                                <img src="/static/img/materials-hero.jpg" alt="{{ item.product.name }}" class="cart-img">
+                            {% endif %}
+                        </div>
+
+                        <div class="cart-info">
+                            <h3>{{ item.product.name }}</h3>
+                            <p class="muted">{{ item.product.seller.business_name }}</p>
+                            <p class="muted">{{ item.product.city }}, {{ item.product.state }}</p>
+                            <p class="cart-unit-price">${{ item.product.price }} per {{ item.product.get_unit_display }}</p>
+
+                            <form method="POST" action="{% url 'update_cart_item' item.product.id %}" class="cart-update-form">
+                                {% csrf_token %}
+                                <label>Quantity</label>
+
+                                <div class="cart-qty-row">
+                                    <input
+                                        type="number"
+                                        name="quantity"
+                                        min="{{ item.product.minimum_order_quantity }}"
+                                        max="{{ item.product.quantity_available }}"
+                                        value="{{ item.quantity }}"
+                                    >
+                                    <button type="submit" class="update-cart-button">Update</button>
+                                </div>
+                            </form>
+
+                            <form method="POST" action="{% url 'remove_from_cart' item.product.id %}" class="remove-form">
+                                {% csrf_token %}
+                                <button type="submit" class="remove-button">Remove</button>
+                            </form>
+                        </div>
+
+                        <div class="cart-price">
+                            <span>Item total</span>
+                            <strong>${{ item.line_total }}</strong>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <aside class="cart-summary">
+                <h2>Order Summary</h2>
+
+                <div class="summary-row">
+                    <span>Items</span>
+                    <strong>{{ cart_items|length }}</strong>
+                </div>
+
+                <div class="summary-row total-row">
+                    <span>Total</span>
+                    <strong>${{ cart_total }}</strong>
+                </div>
+
+                <p class="small-note">
+                    Checkout is still in test mode. No real payment will be charged.
+                </p>
+
+                <a href="{% url 'cart_checkout' %}" class="checkout-cart-button">
+                    Proceed to Checkout
+                </a>
+            </aside>
+        </div>
+    {% else %}
+        <div class="empty-cart">
+            <h2>Your cart is empty</h2>
+            <p>Start browsing materials and add products to your cart.</p>
+            <a href="{% url 'home' %}" class="button">Browse Materials</a>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

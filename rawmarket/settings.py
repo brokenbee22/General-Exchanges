@@ -5,7 +5,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-secret-key-change-this-later')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 # local names I might use while testing.
 # later, when this gets deployed, I will replace this with the real domain.
 ALLOWED_HOSTS = ['127.0.0.1',

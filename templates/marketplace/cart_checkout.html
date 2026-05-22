@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="checkout-page">
+    <div class="page-header">
+        <h1>Checkout</h1>
+        <p>Enter your delivery information to place your order.</p>
+    </div>
+
+    <div class="checkout-layout">
+        <div class="checkout-form-card">
+            <form method="POST">
+                {% csrf_token %}
+
+                {{ form.as_p }}
+
+                <button type="submit" class="place-order-button">
+                    Place Order
+                </button>
+            </form>
+        </div>
+
+        <aside class="checkout-summary-card">
+            <h2>Order Summary</h2>
+
+            {% for item in cart_items %}
+                <div class="checkout-summary-item">
+                    <div>
+                        <strong>{{ item.product.name }}</strong>
+                        <p>{{ item.quantity }} × ${{ item.product.price }}</p>
+                    </div>
+                    <span>${{ item.line_total }}</span>
+                </div>
+            {% endfor %}
+
+            <div class="summary-row total-row">
+                <span>Total</span>
+                <strong>${{ cart_total }}</strong>
+            </div>
+
+            <p class="small-note">
+                General Exchange is in beta. This creates the order but does not charge a real payment yet.
+            </p>
+        </aside>
+    </div>
+</section>
+{% endblock %}
