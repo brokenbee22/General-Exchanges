@@ -13,3 +13,9 @@ the website also has a basic seller dashboard. sellers can see their products an
 i also added demo products like steel and wood so the site does not look empty. the images are stored in the static folder for now because this is just a beta version. later, if this became more serious, product images should probably use something like cloudinary or amazon s3 instead of local files.
 
 this project helped me practice django, python backend logic, templates, static files, user authentication, admin approval, carts, checkout flow, product listings, and deployment. it is not perfect yet, but the main idea works and it is a good starting point for a raw materials marketplace.
+
+live website
+
+the website is also live here: https://general-exchanges.onrender.com
+
+this is the deployed version of the project, so people can actually open it and test the marketplace. some stuff is still beta and not fully finished, like real payments and real seller payouts, but the main flow is there. users can browse products, add materials to the cart, go through checkout, and sellers can register and list products after getting approved.
